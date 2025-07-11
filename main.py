@@ -1,21 +1,27 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from datetime import datetime
 import os
 import json
 import uuid
+import io
+import zipfile
 
 app = Flask(__name__)
 
 os.makedirs('static/uploads', exist_ok=True)
 app.secret_key = 'your_secret_key_here'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
-db = SQLAlchemy(app)
+
+# Use DATABASE_URL from environment if available
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///users.db')
 
 UPLOAD_FOLDER = 'static/uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+db = SQLAlchemy(app)
 
 # User model
 class User(db.Model):
@@ -41,8 +47,6 @@ class WorkSession(db.Model):
 
     user = db.relationship('User', backref='work_sessions')
 
-
-# Report model
 class Report(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.String(20), nullable=False)
@@ -59,8 +63,6 @@ class Report(db.Model):
     user = db.relationship('User', backref='reports')
     status = db.Column(db.String(50), default="Received")
 
-
-# Home page (login)
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -78,7 +80,6 @@ def index():
             flash('Invalid email or password.', 'danger')
     return render_template('index.html')
 
-# Worker dashboard
 @app.route('/worker_dashboard')
 def worker_dashboard():
     user_id = session.get('user_id')
@@ -88,7 +89,6 @@ def worker_dashboard():
     user = User.query.get(user_id)
     return render_template('worker_dashboard.html', user=user)
 
-# Manager dashboard
 @app.route('/manager_dashboard')
 def manager_dashboard():
     user_id = session.get('user_id')
@@ -98,7 +98,6 @@ def manager_dashboard():
     user = User.query.get(user_id)
     return render_template('manager_dashboard.html', user=user)
 
-# Register
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -130,12 +129,10 @@ def register():
             flash(f'Registration error: {e}', 'danger')
     return render_template('register.html')
 
-# Profile
 @app.route('/profile')
 def profile():
     return redirect(url_for('worker_dashboard'))
 
-# Edit profile
 @app.route('/edit_profile', methods=['POST'])
 def edit_profile():
     user_id = session.get('user_id')
@@ -144,7 +141,6 @@ def edit_profile():
         return redirect(url_for('index'))
 
     user = User.query.get(user_id)
-
     new_email = request.form['email']
     new_phone = request.form['phone']
     avatar_file = request.files.get('avatar')
@@ -162,14 +158,12 @@ def edit_profile():
     flash('Profile updated successfully.', 'success')
     return redirect(url_for('profile'))
 
-# Logout
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)
     flash('You have logged out.', 'success')
     return redirect(url_for('index'))
 
-# Add report
 @app.route('/add_report', methods=['POST'])
 def add_report():
     user_id = session.get('user_id')
@@ -178,7 +172,6 @@ def add_report():
         return redirect(url_for('index'))
 
     user = User.query.get(user_id)
-
     date = request.form['date']
     customer = request.form['customer']
     project_number = request.form['project_number']
@@ -193,12 +186,9 @@ def add_report():
     photo_filenames = []
     for photo in photos:
         if photo and photo.filename:
-            print("PHOTO RECEIVED:", photo.filename)
-
             filename = f"{uuid.uuid4().hex}_{secure_filename(photo.filename)}"
             photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             photo.save(photo_path)
-            print("PHOTO SAVED TO:", photo_path)
             photo_filenames.append(filename)
 
     report = Report(
@@ -219,7 +209,6 @@ def add_report():
     flash('Report added successfully.', 'success')
     return redirect(url_for('worker_dashboard'))
 
-# My reports
 @app.route('/my_reports')
 def my_reports():
     user_id = session.get('user_id')
@@ -235,7 +224,6 @@ def my_reports():
 
     return render_template('my_reports.html', reports=reports, user=user)
 
-# View report
 @app.route('/report/<int:report_id>')
 def view_report(report_id):
     user_id = session.get('user_id')
@@ -251,11 +239,7 @@ def view_report(report_id):
         return redirect(url_for('my_reports'))
 
     photos = json.loads(report.photo_filenames or "[]")
-
     return render_template('view_report.html', report=report, photos=photos, user=user)
-from flask import send_file
-import io
-import zipfile
 
 @app.route('/download_all_photos/<int:report_id>')
 def download_all_photos(report_id):
@@ -267,7 +251,6 @@ def download_all_photos(report_id):
     report = Report.query.get_or_404(report_id)
     user = User.query.get(user_id)
 
-    # Дозволити тільки власнику або менеджеру
     if report.user_id != user_id and 'manage' not in user.user_type.lower():
         flash('You do not have access to this report.', 'danger')
         return redirect(url_for('my_reports'))
@@ -277,7 +260,6 @@ def download_all_photos(report_id):
         flash('No attachments to download.', 'info')
         return redirect(url_for('view_report', report_id=report_id))
 
-    # Створюємо zip-архів у памʼяті
     memory_file = io.BytesIO()
     with zipfile.ZipFile(memory_file, 'w') as zf:
         for filename in photos:
@@ -292,7 +274,7 @@ def download_all_photos(report_id):
         download_name=f'report_{report.id}_attachments.zip',
         as_attachment=True
     )
-# Update status
+
 @app.route('/update_status/<int:report_id>', methods=['POST'])
 def update_status(report_id):
     user_id = session.get('user_id')
@@ -311,9 +293,7 @@ def update_status(report_id):
     db.session.commit()
     flash('Status updated.', 'success')
     return redirect(url_for('view_report', report_id=report_id))
-from datetime import datetime
 
-# Початок роботи
 @app.route('/start_session', methods=['POST'])
 def start_session():
     user_id = session.get('user_id')
@@ -324,7 +304,6 @@ def start_session():
     lat = data.get('lat')
     lon = data.get('lon')
 
-    # Перевіряємо, чи немає вже активної сесії
     existing = WorkSession.query.filter_by(user_id=user_id, end_time=None).first()
     if existing:
         return 'Session already started', 400
@@ -339,7 +318,6 @@ def start_session():
     db.session.commit()
     return 'Started', 200
 
-# Закінчення роботи
 @app.route('/finish_session', methods=['POST'])
 def finish_session():
     user_id = session.get('user_id')
@@ -350,7 +328,6 @@ def finish_session():
     lat = data.get('lat')
     lon = data.get('lon')
 
-    # Знайти активну сесію
     session_rec = WorkSession.query.filter_by(user_id=user_id, end_time=None).first()
     if not session_rec:
         return 'No active session', 400
@@ -361,10 +338,6 @@ def finish_session():
     db.session.commit()
     return 'Session finished successfully.', 200
 
-# Мої сесії
-from flask import render_template
-from datetime import datetime
-
 @app.route('/my_sessions')
 def my_sessions():
     user_id = session.get('user_id')
@@ -374,10 +347,4 @@ def my_sessions():
 
     user = User.query.get(user_id)
     sessions = WorkSession.query.filter_by(user_id=user_id).order_by(WorkSession.start_time.desc()).all()
-
     return render_template('my_sessions.html', user=user, sessions=sessions)
-
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run(host='0.0.0.0', port=5000)
