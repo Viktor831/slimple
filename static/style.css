@@ -1,0 +1,705 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f0f2f5;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Карта як фон */
+#map {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  z-index: 0;
+  opacity: 0.90;
+  pointer-events: none;
+}
+.pulse-marker {
+  width: 20px;
+  height: 20px;
+  background: #007aff;
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 0 0 rgba(0, 122, 255, 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 122, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 122, 255, 0);
+  }
+}
+/* Контейнер з контентом поверх карти */
+.dashboard {
+  position: relative;
+  z-index: 1;
+}
+
+/* Головна сторінка */
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+@media (min-width: 700px) {
+  .container {
+    flex-direction: row;
+    justify-content: center;
+    gap: 60px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+}
+
+.info {
+  text-align: center;
+  margin-bottom: 30px;
+}
+.info h1 {
+  font-size: 48px;
+  color: #A52A2A;
+  margin: 0 0 10px 0;
+}
+.info p {
+  font-size: 20px;
+  color: #333;
+}
+
+/* Форми та профілі */
+.login-box,
+.profile-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  max-width: 400px;
+  background: white;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  border-radius: 8px;
+}
+
+.profile-box h2 {
+  text-align: center;
+  color: #A52A2A;
+  margin-bottom: 20px;
+}
+.profile-box p {
+  text-align: center;
+  margin: 8px 0;
+  font-size: 16px;
+}
+.profile-box form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.input,
+.login-box input,
+.profile-box input,
+.profile-box select,
+.profile-box textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+  font-family: inherit;
+}
+
+textarea.input,
+.input textarea {
+  resize: vertical;
+}
+
+.button,
+.login-box button,
+.profile-box button {
+  width: 100%;
+  background-color: #A52A2A;
+  color: white;
+  padding: 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 18px;
+  cursor: pointer;
+}
+.button:hover,
+.login-box button:hover,
+.profile-box button:hover {
+  background-color: #8B2323;
+}
+
+.login-box .create-btn {
+  background-color: #8A9779;
+  margin-top: 10px;
+}
+.login-box .create-btn:hover {
+  background-color: #7a866b;
+}
+
+.login-box .link,
+.profile-box .logout {
+  text-align: center;
+  margin-top: 12px;
+}
+.login-box .link a,
+.profile-box .logout {
+  color: #A52A2A;
+  text-decoration: none;
+  font-size: 14px;
+}
+.login-box .link a:hover,
+.profile-box .logout:hover {
+  text-decoration: underline;
+}
+
+.login-box .divider {
+  border-top: 1px solid #ddd;
+  margin: 16px 0;
+}
+
+/* Повідомлення */
+.message {
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+.message.success {
+  background: #d4edda;
+  color: #155724;
+}
+.message.danger {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* Кнопки-посилання */
+.profile-box a.button {
+  display: block;
+  width: 90%;
+  margin: 10px auto;
+  text-align: center;
+  padding: 12px;
+  background-color: #A52A2A;
+  color: white;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: bold;
+  box-sizing: border-box;
+}
+.profile-box a.button:hover {
+  background-color: #8B2323;
+}
+
+/* Група радіо-кнопок */
+.radio-group {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 12px;
+}
+.radio-group label {
+  font-size: 16px;
+}
+input[type="file"].input {
+  padding: 10px 0;
+}
+
+/* Список звітів */
+.report-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.report-item {
+  margin-bottom: 20px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #f9f9f9;
+  text-align: center;
+}
+
+/* Кнопка Back */
+.back-link {
+  display: inline-block;
+  margin: 10px 0 20px 0;
+  font-size: 16px;
+  color: #A52A2A;
+  text-decoration: none;
+}
+.back-link:hover {
+  text-decoration: underline;
+}
+
+/* DASHBOARD SIDEBAR */
+.dashboard {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+.main-content {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 100dvh; /* ключова зміна */
+  box-sizing: border-box;
+  z-index: 1;
+  width: 100%;
+  text-align: center;
+}
+.main-content h1 {
+  color: #ffffff;
+  margin: 0;
+  font-size: 32px;
+  width: 100%;
+}
+.main-content p {
+  margin: 10px 0 0;
+  font-size: 18px;
+  width: 100%;
+}
+
+.new-report-button {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  background-color: #A52A2A;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 16px;
+  margin-bottom: 20px;
+  transition: background 0.3s ease;
+}
+.new-report-button:hover {
+  background-color: #8B2323;
+}
+.new-report-button .plus-icon {
+  font-size: 36px;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+
+/* Звіти */
+.report-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.report-container h2 {
+  color: #A52A2A;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.report-container p {
+  font-size: 16px;
+  margin: 8px 0;
+}
+.report-container a.back-link {
+  display: inline-block;
+  margin-bottom: 20px;
+  color: #A52A2A;
+  text-decoration: none;
+  font-size: 16px;
+}
+.report-container a.back-link:hover {
+  text-decoration: underline;
+}
+.report-container form {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.report-container form select {
+  padding: 8px;
+  font-size: 16px;
+}
+.report-container form button {
+  background-color: #A52A2A;
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.report-container form button:hover {
+  background-color: #8B2323;
+}
+.photos {
+  margin-top: 20px;
+}
+.photos img {
+  max-width: 200px;
+  margin: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.icon-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.icon-wrapper span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+  pointer-events: none;
+}
+
+.session-button {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+}
+.profile-button {
+  position: fixed;
+  left: 25px;
+  z-index: 1101;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 500px;
+  background: rgba(30, 30, 30, 0.7);
+  backdrop-filter: blur(20px);
+  border-radius: 36px;
+  padding: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  z-index: 999;
+}
+.header{
+  background: rgba(30, 30, 30, 0.7);
+  backdrop-filter: blur(20px);
+  padding: 5px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* вертикально */
+  align-items: center;     /* горизонтально */
+  width:100%;
+  height:45px;
+  
+}
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+  background-color: transparent;
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", Helvetica, Arial, sans-serif;
+  margin: 10% auto;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 500px;
+  height:50%;
+}
+
+.close {
+  float: right;
+  font-size: 28px;
+  cursor: pointer;
+}
+.header h1 {
+  font-size: 28px;
+  text-align: center;
+  margin: 0;
+  background: #efebe5;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.report-container table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.report-container th, .report-container td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.report-container th {
+  background-color: #A52A2A;
+  color: white;
+  width:100%;
+}
+.ios-button {
+  width: 64px;
+  height: 64px;
+  background: #f9f9f9;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transition: all 0.2s ease-in-out;
+}
+.ios-button blue{
+  width: 14px;
+  height: 64px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transition: all 0.2s ease-in-out;
+}
+.ios-button img,
+.ios-button i {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  color: #000;
+}
+
+.ios-button.session {
+  background: white;
+  width: 80px;
+  height: 80px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #111;
+}
+
+/* iOS-style Modal */
+.report-modal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+  font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', Helvetica, Arial, sans-serif;
+}
+
+.report-modal-content {
+  background-color: #fff;
+  margin: 40px auto;
+  padding: 24px;
+  border-radius: 28px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  width: 80%;
+  max-width: 500px;
+  position: relative;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  font-size: 24px;
+  background: none;
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.modal-title {
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-form input,
+.modal-form textarea,
+.modal-form select {
+  width:90%;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+}
+
+.modal-form textarea {
+  resize: vertical;
+}
+
+.modal-form label {
+  font-size: 15px;
+  color: #333;
+}
+
+.submit-report-btn {
+  background-color: #8A9779;
+  color: white;
+  border: none;
+  border-radius: 18px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.submit-report-btn:hover {
+  background-color: #A52A2A;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* Avatar styles */
+#avatarContainer {
+  text-align: center;
+  cursor: pointer;
+}
+#avatarContainer.editing:hover {
+  opacity: 0.7;
+}
+#avatarImg {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e5e5ea;
+}
+
+
+
+/* Медіа-запити */
+@media (max-width: 700px) {
+  #map{
+    position:fixed;
+    height:100%;
+  }
+  .header{
+    padding-right:25px;
+  }
+  .main-content h1 {
+    font-size: 26px;
+    text-align: right;
+    margin:0 auto;
+  }
+  .main-content p {
+    font-size: 18px;
+    text-align: center;
+  }
+  .new-report-button {
+    width: 120px;
+    height: 120px;
+    font-size: 18px;
+  }
+  .new-report-button .plus-icon {
+    font-size: 40px;
+  }
+  .button-row {
+    background: rgba(0,0,0,0.3);
+    width:100%;
+    height:150px;
+    border-radius: 0%;
+  }
+}
+
+@media (max-width: 1200px) {
+  .header{
+    padding-right:25px 0;
+  }
+  .main-content h1 {
+    font-size: 26px;
+    text-align: right;
+    margin:0 auto;
+  }
+  .main-content p {
+    font-size: 18px;
+    text-align: center;
+  }
+  .new-report-button {
+    width: 100px;
+    height: 100px;
+    font-size: 18px;
+  }
+  .new-report-button .plus-icon {
+    font-size: 40px;
+  }
+  .button-row {
+    height:80px;
+    display: fixed;
+    justify-content: space-around;
+    align-items: center;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 500px;
+    background: rgba(30, 30, 30, 0.7);
+    backdrop-filter: blur(20px);
+    border-radius: 36px;
+    padding: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    z-index: 999;
+  }
+}

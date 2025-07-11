@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Worker Dashboard</title>
+<link href="/static/style.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.lordicon.com/lordicon.js"></script>
+<link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
+</head>
+<body>
+
+
+<div class="dashboard" style="position: relative; z-index: 1;">
+<main class="main-content">
+<div class="header">
+<h1>Welcome, {{ user.first_name }}!</h1>
+<a class="profile-button" href="{{ url_for('profile') }}" title="My Profile">
+<i class="fas fa-user-circle" style="font-size: 28px; color: #efebe5;"></i>
+</a>
+</div>
+<div class="button-row">
+<!-- NEW REPORT BUTTON -->
+<a class="ios-button" onclick="openReportModal()" title="New Report">
+<img alt="New Report" src="/static/icons/new-report.svg"/>
+</a>
+<!-- ALL REPORTS BUTTON -->
+<a class="ios-button" href="{{ url_for('my_reports') }}" title="My Reports">
+<img alt="Reports" src="/static/icons/reports.svg"/>
+</a>
+<!-- START/FINISH BUTTON -->
+<button class="ios-button session" id="sessionButton" title="Start/Finish Session">
+<span id="sessionText">Start</span>
+</button>
+<!-- MY VEHICLE -->
+<a class="ios-button" href="{{ url_for('add_report') }}" title="New Report">
+<img alt="My Vehicle" src="/static/icons/my-vehicle.svg"/>
+</a>
+<!-- MAINTENANCE -->
+<a class="ios-button" href="{{ url_for('add_report') }}" title="New Report">
+<img alt="Maintenance Request" src="/static/icons/Maintenance.svg"/>
+</a>
+</div>
+</main>
+</div>
+<!-- Profile modal -->
+<div class="modal" id="profileModal">
+<div class="modal-content" id="profileContent">
+<div id="profileHtml">
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f5f5f5;
+  }
+
+  .profile-container {
+    max-width: 500px;
+    margin: 30px auto;
+    border-radius: 24px;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+  }
+
+  .profile-header {
+    background-image: url('{{ user.avatar or "/static/avatar.png" }}');
+    background-size: cover;
+    background-position: center;
+    height: 230px;
+    position: relative;
+  }
+
+  .edit-controls {
+    position: absolute;
+    top: 12px;
+    left: 20px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 24px;
+    text-decoration: none;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .btn {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 18px;
+    padding: 6px 18px;
+    font-weight: 500;
+    font-size: 15px;
+    color: #111;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    backdrop-filter: blur(5px);
+    cursor: pointer;
+    transition: 0.2s ease;
+  }
+
+  .btn:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-1px);
+  }
+
+  .btn-save {
+    background-color: #007aff;
+    color: white;
+  }
+
+  .btn-cancel {
+    background-color: #ff3b30;
+    color: white;
+  }
+
+  .profile-content {
+    padding: 24px 20px 30px;
+  }
+
+  .profile-name {
+    margin-top: 0;
+    font-size: 26px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .profile-type {
+    font-size: 16px;
+    color: #444;
+    margin-bottom: 30px;
+    text-align: center;
+  }
+
+  .profile-field {
+    margin-bottom: 20px;
+  }
+
+  .profile-field label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #333;
+  }
+
+  .profile-field-value {
+    background: #f2f2f7;
+    padding: 12px;
+    border-radius: 12px;
+    color: #555;
+  }
+
+  .profile-field-input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+    box-sizing: border-box;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .profile-links {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+  }
+
+  .profile-links a {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 500;
+    text-decoration: none;
+    color: #007aff;
+  }
+
+  .profile-links a.logout {
+    color: #A52A2A;
+  }
+
+.select-photo-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.select-photo-btn.hidden {
+  display: none;
+}
+#avatarHeader.editing .select-photo-btn {
+  display: inline-block;
+}
+</style>
+<div class="profile-container">
+<div class="profile-header" id="avatarHeader">
+<div class="edit-controls">
+<button class="btn" id="editBtn">Edit</button>
+<button class="btn btn-save hidden" id="saveBtn">Save</button>
+<button class="btn btn-cancel hidden" id="cancelBtn">Cancel</button>
+</div>
+<a class="close-btn" href="{{ url_for('worker_dashboard') }}">×</a>
+<button class="btn select-photo-btn hidden" id="selectPhotoBtn" type="button">Select photo</button></div>
+<div class="profile-content">
+<h2 class="profile-name">{{ user.first_name }} {{ user.last_name }}</h2>
+<div class="profile-type">{{ user.user_type }}</div>
+<!-- View Mode -->
+<div id="viewMode">
+<div class="profile-field">
+<label>Email</label>
+<div class="profile-field-value" id="emailDisplay">{{ user.email }}</div>
+</div>
+<div class="profile-field">
+<label>Phone</label>
+<div class="profile-field-value" id="phoneDisplay">{{ user.phone or "—" }}</div>
+</div>
+</div>
+<!-- Edit Mode -->
+<form action="{{ url_for('edit_profile') }}" class="hidden" enctype="multipart/form-data" id="editForm" method="POST">
+<input name="avatar" style="display: none;" type="file"/>
+<div class="profile-field">
+<label for="emailInput">Email</label>
+<input class="profile-field-input" id="emailInput" name="email" required="" type="email" value="{{ user.email }}"/>
+</div>
+<div class="profile-field">
+<label for="phoneInput">Phone</label>
+<input class="profile-field-input" id="phoneInput" name="phone" type="text" value="{{ user.phone or '' }}"/>
+</div>
+</form>
+<div class="profile-links">
+<a href="{{ url_for('my_sessions') }}">My sessions</a>
+<a class="logout" href="{{ url_for('logout') }}">Log Out</a>
+</div>
+</div>
+</div>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const editBtn = document.getElementById("editBtn");
+    const saveBtn = document.getElementById("saveBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const viewMode = document.getElementById("viewMode");
+    const editForm = document.getElementById("editForm");
+    const emailInput = document.getElementById("emailInput");
+    const phoneInput = document.getElementById("phoneInput");
+    const emailDisplay = document.getElementById("emailDisplay");
+    const phoneDisplay = document.getElementById("phoneDisplay");
+
+    let originalEmail = emailInput.value;
+    let originalPhone = phoneInput.value;
+
+    editBtn.addEventListener("click", function () {
+      viewMode.classList.add("hidden");
+      editForm.classList.remove("hidden");
+      editBtn.classList.add("hidden");
+      saveBtn.classList.remove("hidden");
+      cancelBtn.classList.remove("hidden");
+    });
+
+    cancelBtn.addEventListener("click", function () {
+      emailInput.value = originalEmail;
+      phoneInput.value = originalPhone;
+
+      viewMode.classList.remove("hidden");
+      editForm.classList.add("hidden");
+      editBtn.classList.remove("hidden");
+      saveBtn.classList.add("hidden");
+      cancelBtn.classList.add("hidden");
+    });
+
+    saveBtn.addEventListener("click", function () {
+      editForm.submit();
+    });
+  });
+</script>
+</div>
+</div>
+</div>
+<!-- Modal open/close -->
+<script>
+    function openReportModal() {
+      document.getElementById("reportModal").style.display = "block";
+    }
+
+    function closeReportModal() {
+      document.getElementById("reportModal").style.display = "none";
+    }
+
+    window.onclick = function(event) {
+      const modal = document.getElementById("reportModal");
+      if (event.target === modal) {
+        closeReportModal();
+      }
+    }
+  </script>
+<!-- Profile fetch + modal events -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const profileButton = document.querySelector('.profile-button');
+  if (profileButton) {
+    profileButton.addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('profileModal').style.display = 'block';
+    });
+  }
+
+  const closeBtn = document.querySelector('.close');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function() {
+      document.getElementById('profileModal').style.display = 'none';
+    });
+  }
+
+  initProfileEvents();
+});
+</script>
+<!-- Map and session handling -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    const avatarInput = document.querySelector('input[name="avatar"]');
+    const selectPhotoBtn = document.getElementById("selectPhotoBtn");
+
+    if (selectPhotoBtn && avatarInput) {
+      selectPhotoBtn.addEventListener("click", () => {
+        avatarInput.click();
+      });
+    }
+
+    editBtn.addEventListener("click", function () {
+      if (selectPhotoBtn) selectPhotoBtn.classList.remove("hidden");
+    });
+
+    cancelBtn.addEventListener("click", function () {
+      if (selectPhotoBtn) selectPhotoBtn.classList.add("hidden");
+    });
+
+    const avatarHeader = document.getElementById("avatarHeader");
+
+    editBtn.addEventListener("click", function () {
+      if (selectPhotoBtn) selectPhotoBtn.classList.remove("hidden");
+      if (avatarHeader) avatarHeader.classList.add("editing");
+    });
+
+    cancelBtn.addEventListener("click", function () {
+      if (selectPhotoBtn) selectPhotoBtn.classList.add("hidden");
+      if (avatarHeader) avatarHeader.classList.remove("editing");
+    });
+
+    const avatarImg = document.getElementById("avatarImg");
+
+    if (avatarInput && avatarImg) {
+      avatarInput.addEventListener("change", function (event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            avatarImg.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+</script>
+  
+  
+  <!-- Loading overlay -->
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="spinner"></div>
+  </div>
+
+  <style>
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(255, 255, 255, 0.8);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 5px solid rgba(0, 0, 0, 0.1);
+      border-top-color: #007aff;
+      border-radius: 50%;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const reportForm = document.querySelector('.modal-form');
+      const loadingOverlay = document.getElementById('loadingOverlay');
+
+      if (reportForm && loadingOverlay) {
+        reportForm.addEventListener('submit', function () {
+          loadingOverlay.classList.remove('hidden');
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>

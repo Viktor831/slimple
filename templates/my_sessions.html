@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>My Sessions</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="report-container">
+    <a href="{{ url_for('worker_dashboard') }}" class="back-link">Back</a>
+    <h2>My Work Sessions</h2>
+
+    {% if sessions %}
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 150px;">Date</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Coordinates</th>
+            <th>Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sessions %}
+            <tr>
+              <td>{{ s.start_time.strftime("%m/%d/%Y") }}</td>
+              <td>{{ s.start_time.strftime("%I:%M %p") }}</td>
+              <td>
+                {% if s.end_time %}
+                  {{ s.end_time.strftime("%I:%M %p") }}
+                {% else %}
+                  <em>Ongoing</em>
+                {% endif %}
+              </td>
+              <td>
+                {% if s.end_lat and s.end_lon %}
+                  {{ "%.5f, %.5f"|format(s.end_lat, s.end_lon) }}
+                {% else %}
+                  <em>-</em>
+                {% endif %}
+              </td>
+              <td>
+                {% if s.end_time %}
+                  {% set diff = s.end_time - s.start_time %}
+                  {% set hours = diff.total_seconds() // 3600 %}
+                  {% set minutes = (diff.total_seconds() % 3600) // 60 %}
+                  {{ "%d:%02d" % (hours, minutes) }} h
+                {% else %}
+                  <em>-</em>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p><em>No work sessions found.</em></p>
+    {% endif %}
+  </div>
+</body>
+</html>

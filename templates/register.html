@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>New Profile</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+  <div class="profile-box">
+    <h2>New Profile</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="message {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+      <label>First Name:</label>
+      <input type="text" name="first_name" class="input" required>
+
+      <label>Last Name:</label>
+      <input type="text" name="last_name" class="input" required>
+
+      <label>Email:</label>
+      <input type="email" name="email" class="input" required>
+
+      <label>Phone:</label>
+      <input type="text" name="phone" class="input">
+
+      <label>Type of User:</label>
+      <select name="user_type" class="input" required onchange="toggleCrewType(this.value)">
+        <option value="">-- Select --</option>
+        <option value="Field Worker">Field Crew</option>
+        <option value="Manager">Management</option>
+      </select>
+
+      <div id="crewTypeField" style="display:none;">
+        <label>Type of Crew:</label>
+        <select name="crew_type" class="input">
+          <option value="">-- Select --</option>
+          <option value="Splicing">Splicing</option>
+          <option value="Placement">Placement</option>
+          <option value="Bore">Bore</option>
+        </select>
+      </div>
+
+      <label>Password:</label>
+      <input type="password" name="password" class="input" required>
+
+      <button type="submit" class="button">Create Account</button>
+
+    </form>
+
+    <h2><a href="/" class="logout">Back to main page</a></h2>
+  </div>
+
+  <script>
+    function toggleCrewType(value) {
+      var crewField = document.getElementById('crewTypeField');
+      crewField.style.display = value === 'Field Worker' ? 'block' : 'none';
+    }
+  </script>
+</body>
+</html>

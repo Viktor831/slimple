@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Worker Dashboard</title>
+<link href="/static/style.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.lordicon.com/lordicon.js"></script>
+<link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
+</head>
+<body>
+<!-- iOS Style Report Modal -->
+<div class="report-modal" id="reportModal">
+<div class="report-modal-content">
+<button class="modal-close-btn" onclick="closeReportModal()">×</button>
+<h2 class="modal-title">New Report</h2>
+<form action="/add_report" class="modal-form" enctype="multipart/form-data" method="POST">
+<label>Date: <input name="date" required="" type="date"/></label>
+<label>Customer: <input name="customer" placeholder="Customer" required="" type="text"/></label>
+<label>Project number <input name="project_number" placeholder="Project Number" required="" type="text"/></label>
+<label>Type of works <input name="type_of_works" placeholder="Type of Works" required="" type="text"/></label>
+<label>Reel ID <input name="reel_id" placeholder="Reel ID" type="text"/></label>
+<label>Pages <input name="pages" placeholder="Pages" type="text"/></label>
+        Production description<textarea name="production" placeholder="Production..." required=""></textarea>
+        Summary<textarea name="total" placeholder="Total..." required=""></textarea>
+<input name="last_production" type="checkbox" value="yes"/>Last Production
+        <input multiple="" name="photos" type="file"/>
+<button class="submit-report-btn" type="submit">Send Report</button>
+</form>
+</div>
+</div>
+<div id="map" style="height: 100vh; position: absolute; top: 0; left: 0; width: 100%; z-index: 0;"></div>
+<div class="dashboard" style="position: relative; z-index: 1;">
+<main class="main-content">
+<div class="header">
+<h1>Welcome, {{ user.first_name }}!</h1>
+<a class="profile-button" href="{{ url_for('profile') }}" title="My Profile">
+<i class="fas fa-user-circle" style="font-size: 28px; color: #efebe5;"></i>
+</a>
+</div>
+<div class="button-row">
+<!-- NEW REPORT BUTTON -->
+<a class="ios-button" onclick="openReportModal()" title="New Report">
+<img alt="New Report" src="/static/icons/new-report.svg"/>
+</a>
+<!-- ALL REPORTS BUTTON -->
+<a class="ios-button" href="{{ url_for('my_reports') }}" title="My Reports">
+<img alt="Reports" src="/static/icons/reports.svg"/>
+</a>
+<!-- START/FINISH BUTTON -->
+<button class="ios-button session" id="sessionButton" title="Start/Finish Session">
+<span id="sessionText">Start</span>
+</button>
+<!-- MY VEHICLE -->
+<a class="ios-button" href="{{ url_for('add_report') }}" title="New Report">
+<img alt="My Vehicle" src="/static/icons/my-vehicle.svg"/>
+</a>
+<!-- MAINTENANCE -->
+<a class="ios-button" href="{{ url_for('add_report') }}" title="New Report">
+<img alt="Maintenance Request" src="/static/icons/Maintenance.svg"/>
+</a>
+</div>
+</main>
+</div>
+<!-- Profile modal -->
+<div class="modal" id="profileModal">
+<div class="modal-content" id="profileContent">
+<div id="profileHtml">
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f5f5f5;
+  }
+
+  .profile-container {
+    max-width: 500px;
+    margin: 30px auto;
+    border-radius: 24px;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+  }
+
+  .profile-header {
+    background-image: url('{{ user.avatar or "/static/avatar.png" }}');
+    background-size: cover;
+    background-position: center;
+    height: 230px;
+    position: relative;
+  }
+
+  .edit-controls {
+    position: absolute;
+    top: 12px;
+    left: 20px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 24px;
+    text-decoration: none;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .btn {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 18px;
+    padding: 6px 18px;
+    font-weight: 500;
+    font-size: 15px;
+    color: #111;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    backdrop-filter: blur(5px);
+    cursor: pointer;
+    transition: 0.2s ease;
+  }
+
+  .btn:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-1px);
+  }
+
+  .btn-save {
+    background-color: #7a866b;
+    color: white;
+  }
+  .btn-save:hover {
+    background-color: white;
+    color: #7a866b;
+  }
+
+  .btn-cancel {
+    background-color: #A52A2A;
+    color: white;
+  }
+  .btn-cancel:hover {
+    background-color: white;
+    color: #A52A2A;
+  }
+  .profile-content {
+    padding: 24px 20px 30px;
+  }
+
+  .profile-name {
+    margin-top: 0;
+    font-size: 26px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .profile-type {
+    font-size: 16px;
+    color: #444;
+    margin-bottom: 30px;
+    text-align: center;
+  }
+
+  .profile-field {
+    margin-bottom: 20px;
+  }
+
+  .profile-field label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #333;
+  }
+
+  .profile-field-value {
+    background: #f2f2f7;
+    padding: 12px;
+    border-radius: 12px;
+    color: #555;
+  }
+
+  .profile-field-input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+    box-sizing: border-box;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  .profile-links {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+  }
+
+  .profile-links a {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 500;
+    text-decoration: none;
+    color: #7a866b;
+  }
+
+  .profile-links a.logout {
+    color: #A52A2A;
+  }
+
+  .select-photo-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 18px;
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    display: none;
+  }
+
+  .select-photo-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+  }
+
+  /* Show select photo button when in editing mode */
+  .profile-header.editing .select-photo-btn {
+    display: block !important;
+  }
+</style>
+<div class="profile-container">
+<div class="profile-header" id="avatarHeader">
+<div class="edit-controls">
+<button class="btn" id="editBtn">Edit</button>
+<button class="btn btn-save hidden" id="saveBtn">Save</button>
+<button class="btn btn-cancel hidden" id="cancelBtn">Cancel</button>
+</div>
+<a class="close-btn" href="{{ url_for('worker_dashboard') }}">×</a>
+<button class="select-photo-btn" id="selectPhotoBtn" type="button">Select photo</button>
+</div>
+<div class="profile-content">
+<h2 class="profile-name">{{ user.first_name }} {{ user.last_name }}</h2>
+<div class="profile-type">{{ user.user_type }}</div>
+<!-- View Mode -->
+<div id="viewMode">
+<div class="profile-field">
+<label>Email</label>
+<div class="profile-field-value" id="emailDisplay">{{ user.email }}</div>
+</div>
+<div class="profile-field">
+<label>Phone</label>
+<div class="profile-field-value" id="phoneDisplay">{{ user.phone or "—" }}</div>
+</div>
+</div>
+<!-- Edit Mode -->
+<form action="{{ url_for('edit_profile') }}" class="hidden" enctype="multipart/form-data" id="editForm" method="POST">
+<input name="avatar" id="avatarInput" style="display: none;" type="file" accept="image/*"/>
+<div class="profile-field">
+<label for="emailInput">Email</label>
+<input class="profile-field-input" id="emailInput" name="email" required="" type="email" value="{{ user.email }}"/>
+</div>
+<div class="profile-field">
+<label for="phoneInput">Phone</label>
+<input class="profile-field-input" id="phoneInput" name="phone" type="text" value="{{ user.phone or '' }}"/>
+</div>
+</form>
+<div class="profile-links">
+<a href="{{ url_for('my_sessions') }}">My sessions</a>
+<a class="logout" href="{{ url_for('logout') }}">Log Out</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Modal open/close -->
+<script>
+    function openReportModal() {
+      document.getElementById("reportModal").style.display = "block";
+    }
+
+    function closeReportModal() {
+      document.getElementById("reportModal").style.display = "none";
+    }
+
+    window.onclick = function(event) {
+      const modal = document.getElementById("reportModal");
+      if (event.target === modal) {
+        closeReportModal();
+      }
+    }
+</script>
+<!-- Profile fetch + modal events -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const profileButton = document.querySelector('.profile-button');
+  if (profileButton) {
+    profileButton.addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('profileModal').style.display = 'block';
+    });
+  }
+
+  const closeBtn = document.querySelector('.close');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function() {
+      document.getElementById('profileModal').style.display = 'none';
+    });
+  }
+
+  // Profile modal functionality
+  const editBtn = document.getElementById("editBtn");
+  const saveBtn = document.getElementById("saveBtn");
+  const cancelBtn = document.getElementById("cancelBtn");
+  const viewMode = document.getElementById("viewMode");
+  const editForm = document.getElementById("editForm");
+  const emailInput = document.getElementById("emailInput");
+  const phoneInput = document.getElementById("phoneInput");
+  const emailDisplay = document.getElementById("emailDisplay");
+  const phoneDisplay = document.getElementById("phoneDisplay");
+  const avatarHeader = document.getElementById("avatarHeader");
+  const selectPhotoBtn = document.getElementById("selectPhotoBtn");
+  const avatarInput = document.getElementById("avatarInput");
+
+  if (editBtn && saveBtn && cancelBtn) {
+    let originalEmail = emailInput ? emailInput.value : '';
+    let originalPhone = phoneInput ? phoneInput.value : '';
+
+    editBtn.addEventListener("click", function () {
+      if (viewMode) viewMode.classList.add("hidden");
+      if (editForm) editForm.classList.remove("hidden");
+      editBtn.classList.add("hidden");
+      if (saveBtn) saveBtn.classList.remove("hidden");
+      if (cancelBtn) cancelBtn.classList.remove("hidden");
+      
+      // Enable avatar editing
+      if (avatarHeader) avatarHeader.classList.add("editing");
+    });
+
+    cancelBtn.addEventListener("click", function () {
+      if (emailInput) emailInput.value = originalEmail;
+      if (phoneInput) phoneInput.value = originalPhone;
+
+      if (viewMode) viewMode.classList.remove("hidden");
+      if (editForm) editForm.classList.add("hidden");
+      editBtn.classList.remove("hidden");
+      if (saveBtn) saveBtn.classList.add("hidden");
+      cancelBtn.classList.add("hidden");
+      
+      // Disable avatar editing
+      if (avatarHeader) avatarHeader.classList.remove("editing");
+    });
+
+    saveBtn.addEventListener("click", function () {
+      if (editForm) editForm.submit();
+    });
+
+    // Avatar selection functionality
+    if (selectPhotoBtn && avatarInput) {
+      selectPhotoBtn.addEventListener("click", function() {
+        avatarInput.click();
+      });
+
+      avatarInput.addEventListener("change", function(event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            if (avatarHeader) {
+              avatarHeader.style.backgroundImage = `url(${e.target.result})`;
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+  }
+});
+</script>
+<!-- Map and session handling -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const map = L.map('map', {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([0, 0], 2);
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap & CartoDB'
+      }).addTo(map);
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            map.setView([lat, lng], 13);
+
+            const pulseHTML = `<div class="pulse-marker"></div>`;
+
+            const customIcon = L.divIcon({
+              className: '',
+              html: pulseHTML,
+              iconSize: [20, 20],
+              iconAnchor: [10, 10]
+            });
+
+            L.marker([lat, lng], { icon: customIcon }).addTo(map);
+          },
+          function() {
+            alert("Unable to retrieve your location.");
+          }
+        );
+      } else {
+        alert("Geolocation is not supported by this browser.");
+      }
+    });
+
+    let sessionActive = false;
+    const sessionButton = document.getElementById('sessionButton');
+    const sessionText = document.getElementById('sessionText');
+
+    let holdTimer = null;
+
+    sessionButton.addEventListener('mousedown', startHold);
+    sessionButton.addEventListener('touchstart', startHold);
+    sessionButton.addEventListener('mouseup', cancelHold);
+    sessionButton.addEventListener('mouseleave', cancelHold);
+    sessionButton.addEventListener('touchend', cancelHold);
+    sessionButton.addEventListener('touchcancel', cancelHold);
+
+    function startHold(e) {
+      e.preventDefault();
+      holdTimer = setTimeout(() => {
+        performAction();
+      }, 1500);
+    }
+
+    function cancelHold() {
+      if (holdTimer) {
+        clearTimeout(holdTimer);
+        holdTimer = null;
+      }
+    }
+
+    function performAction() {
+      if (!navigator.geolocation) {
+        alert('Geolocation is not supported');
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const data = {
+          lat: position.coords.latitude,
+          lon: position.coords.longitude
+        };
+
+        if (!sessionActive) {
+          fetch('/start_session', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+          }).then(async res => {
+            const text = await res.text();
+            if (res.ok) {
+              sessionActive = true;
+              sessionText.textContent = 'Finish';
+              alert('Session started.');
+            } else {
+              alert(text);
+              if (text.includes("Session already started")) {
+                sessionActive = true;
+                sessionText.textContent = 'Finish';
+              }
+            }
+          });
+        } else {
+          fetch('/finish_session', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+          }).then(async res => {
+            const text = await res.text();
+            if (res.ok) {
+              sessionActive = false;
+              sessionText.textContent = 'Start';
+              alert('Session finished.');
+            } else {
+              alert(text);
+              if (text.includes("No active session")) {
+                sessionActive = false;
+                sessionText.textContent = 'Start';
+              }
+            }
+          });
+        }
+      });
+    }
+</script>
+
+<!-- Loading overlay -->
+<div id="loadingOverlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+</div>
+
+<style>
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 5px solid rgba(0, 0, 0, 0.1);
+    border-top-color: #007aff;
+    border-radius: 50%;
+    animation: spin 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const reportForm = document.querySelector('.modal-form');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    if (reportForm && loadingOverlay) {
+      reportForm.addEventListener('submit', function () {
+        loadingOverlay.classList.remove('hidden');
+      });
+    }
+  });
+</script>
+
+</body>
+</html>
